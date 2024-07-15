@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <time.h>
+#include <sys/time.h>
 #include <pthread.h>
 
 #define PORT1 4001
@@ -65,6 +65,9 @@ void close_socket(int server_socket){
     close(server_socket);
 }
 
+struct timeval tv;
+long long last_time = 0;
+
 int main(int argc, char **argv){
     struct Client_data client_data1;
     struct Client_data client_data2;
@@ -85,22 +88,25 @@ int main(int argc, char **argv){
 
     while (1)
     {
-        // read data but print it to the screen at every 100 ms
-        usleep(100000);
-        // print timestamp and message
-        time_t current_time;
-        time(&current_time);
-        printf("{\"timestamp\": %ld, \"out1\":\"%s\", \"out2\":\"%s\", \"out3\":\"%s\"}\n", current_time, client_data1.output, client_data2.output, client_data3.output);
-        // after consuming the data, reset the data
-        client_data1.output[0] = '-';
-        client_data1.output[1] = '-';
-        client_data1.output[2] = '\0';
-        client_data2.output[0] = '-';
-        client_data2.output[1] = '-';
-        client_data2.output[2] = '\0';
-        client_data3.output[0] = '-';
-        client_data3.output[1] = '-';
-        client_data3.output[2] = '\0';
+         // print timestamp and message
+        gettimeofday(&tv, NULL);
+        long long milliseconds = tv.tv_sec * 1000LL + tv.tv_usec / 1000;
+        // read data but print it to the screen at every 20 ms
+        if (milliseconds - last_time > 100)
+        {
+            last_time = milliseconds;
+            printf("{\"timestamp\": %lld, \"out1\":\"%s\", \"out2\":\"%s\", \"out3\":\"%s\"}\n", milliseconds, client_data1.output, client_data2.output, client_data3.output);
+            // after consuming the data, reset the data
+            client_data1.output[0] = '-';
+            client_data1.output[1] = '-';
+            client_data1.output[2] = '\0';
+            client_data2.output[0] = '-';
+            client_data2.output[1] = '-';
+            client_data2.output[2] = '\0';
+            client_data3.output[0] = '-';
+            client_data3.output[1] = '-';
+            client_data3.output[2] = '\0';
+        }
 
     }
     close_socket(client_data1.server_socket);
