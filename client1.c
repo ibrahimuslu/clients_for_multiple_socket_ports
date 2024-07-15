@@ -14,13 +14,12 @@
 #define PORT2 4002
 #define PORT3 4003
 
-struct sockaddr_in server_addr;
 typedef struct Client_data
 {
     int server_socket;
     char output[1024];
+    struct sockaddr_in server_addr;
 } Client_data;
-
 
 Client_data cd = {
 .server_socket = 0, 
@@ -35,14 +34,14 @@ void create_socket(int* server_socket){
     }
 }
 
-void connect_to_server(int* server_socket, int PORT){
-
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(PORT);
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+void connect_to_server(int* server_socket, struct sockaddr_in * server_addr, int PORT){
+    bzero(server_addr, sizeof(*server_addr));
+    server_addr->sin_family = AF_INET;
+    server_addr->sin_port = htons(PORT);
+    server_addr->sin_addr.s_addr = inet_addr("127.0.0.1");
 
     printf("Client is connected to the server %d %d \n", *server_socket, PORT);
-    if(connect(*server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
+    if(connect(*server_socket, (struct sockaddr *)server_addr, sizeof(*server_addr)) < 0){
         perror("Connection failed");
         exit(1);
     }
@@ -69,22 +68,16 @@ struct timeval tv;
 long long last_time = 0;
 
 int main(int argc, char **argv){
-    struct Client_data client_data1;
-    struct Client_data client_data2;
-    struct Client_data client_data3;
-    create_socket(&client_data1.server_socket);
-    create_socket(&client_data2.server_socket);
-    create_socket(&client_data3.server_socket);
+   
+    struct Client_data clients[4] = {cd, cd, cd, cd};
+    pthread_t thread[3] = {0};
 
-    connect_to_server(&client_data1.server_socket, PORT1);
-    connect_to_server(&client_data2.server_socket, PORT2);
-    connect_to_server(&client_data3.server_socket, PORT3);
-
-    // create thread from read_data function
-    pthread_t thread1, thread2, thread3;
-    pthread_create(&thread1, NULL, &read_data, (void *)&client_data1);
-    pthread_create(&thread2, NULL, &read_data, (void *)&client_data2);
-    pthread_create(&thread3, NULL, &read_data, (void *)&client_data3);
+    for (int i = 0; i < 3; i++)
+    {
+        create_socket(&clients[i].server_socket);
+        connect_to_server(&clients[i].server_socket, &clients[i].server_addr, PORT1 + i);
+        pthread_create(&thread[i], NULL, &read_data, (void *)&clients[i]);
+    }
 
     while (1)
     {
@@ -95,22 +88,24 @@ int main(int argc, char **argv){
         if (milliseconds - last_time > 100)
         {
             last_time = milliseconds;
-            printf("{\"timestamp\": %lld, \"out1\":\"%s\", \"out2\":\"%s\", \"out3\":\"%s\"}\n", milliseconds, client_data1.output, client_data2.output, client_data3.output);
+            printf("{\"timestamp\": %lld, \"out1\":\"%s\", \"out2\":\"%s\", \"out3\":\"%s\"}\n", milliseconds, clients[0].output, clients[1].output, clients[2].output);
             // after consuming the data, reset the data
-            client_data1.output[0] = '-';
-            client_data1.output[1] = '-';
-            client_data1.output[2] = '\0';
-            client_data2.output[0] = '-';
-            client_data2.output[1] = '-';
-            client_data2.output[2] = '\0';
-            client_data3.output[0] = '-';
-            client_data3.output[1] = '-';
-            client_data3.output[2] = '\0';
+            for (int i = 0; i < 3; i++)
+            {
+                clients[i].output[0] = '-';
+                clients[i].output[1] = '-';
+                clients[i].output[2] = '\0';
+            }
         }
 
     }
-    close_socket(client_data1.server_socket);
-    close_socket(client_data2.server_socket);
-    close_socket(client_data3.server_socket);
+    for (int i = 0; i < 3; i++)
+    {
+        pthread_join(thread[i], NULL);
+    }
+    for (int i = 0; i < 3; i++)
+    {
+        close_socket(clients[i].server_socket);
+    }
     return 0;
 }
