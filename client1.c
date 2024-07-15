@@ -15,53 +15,73 @@
 #define PORT3 4003
 
 struct sockaddr_in server_addr;
-int server_socket;
-static char out_data1[1024];
-char out_data2[1024];
-char out_data3[1024];
+typedef struct Client_data
+{
+    int server_socket;
+    char output[1024];
+} Client_data;
 
-void create_socket(){
-    server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if(server_socket < 0){
+
+Client_data cd = {
+.server_socket = 0, 
+.output = {'-', '-', '\0'}
+};
+
+void create_socket(int* server_socket){
+    *server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if(*server_socket < 0){
         perror("Socket creation failed");
         exit(1);
     }
 }
 
-void connect_to_server(){
+void connect_to_server(int* server_socket, int PORT){
+
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(PORT1);
+    server_addr.sin_port = htons(PORT);
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    if(connect(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
+    printf("Client is connected to the server %d %d \n", *server_socket, PORT);
+    if(connect(*server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
         perror("Connection failed");
         exit(1);
     }
 }
-void *read_data(void *arg){
+static void *read_data(void *arg){
+    struct Client_data * client_data = (struct Client_data*)arg;
     char data[1024];
     while(1){
-        read(server_socket, data, sizeof(data));
+        read(client_data->server_socket, data, sizeof(data));
    
         // Trim the newline character from the data
         char* trimmed_data = strtok(data, "\n");
-        strcpy(out_data1, trimmed_data);
+        strcpy(client_data->output, trimmed_data);
         bzero(data, sizeof(data));
     }
     return NULL;
 }
 
-void close_socket(){
+void close_socket(int server_socket){
     close(server_socket);
 }
 
 int main(int argc, char **argv){
-    create_socket();
-    connect_to_server();
+    struct Client_data client_data1;
+    struct Client_data client_data2;
+    struct Client_data client_data3;
+    create_socket(&client_data1.server_socket);
+    create_socket(&client_data2.server_socket);
+    create_socket(&client_data3.server_socket);
+
+    connect_to_server(&client_data1.server_socket, PORT1);
+    connect_to_server(&client_data2.server_socket, PORT2);
+    connect_to_server(&client_data3.server_socket, PORT3);
 
     // create thread from read_data function
-    pthread_t thread;
-    pthread_create(&thread, NULL, read_data, NULL);
+    pthread_t thread1, thread2, thread3;
+    pthread_create(&thread1, NULL, &read_data, (void *)&client_data1);
+    pthread_create(&thread2, NULL, &read_data, (void *)&client_data2);
+    pthread_create(&thread3, NULL, &read_data, (void *)&client_data3);
 
     while (1)
     {
@@ -70,8 +90,21 @@ int main(int argc, char **argv){
         // print timestamp and message
         time_t current_time;
         time(&current_time);
-        printf("{\"timestamp\": %ld, \"out1\":\"%s\"}\n", current_time, out_data1);
+        printf("{\"timestamp\": %ld, \"out1\":\"%s\", \"out2\":\"%s\", \"out3\":\"%s\"}\n", current_time, client_data1.output, client_data2.output, client_data3.output);
+        // after consuming the data, reset the data
+        client_data1.output[0] = '-';
+        client_data1.output[1] = '-';
+        client_data1.output[2] = '\0';
+        client_data2.output[0] = '-';
+        client_data2.output[1] = '-';
+        client_data2.output[2] = '\0';
+        client_data3.output[0] = '-';
+        client_data3.output[1] = '-';
+        client_data3.output[2] = '\0';
+
     }
-    close_socket();
+    close_socket(client_data1.server_socket);
+    close_socket(client_data2.server_socket);
+    close_socket(client_data3.server_socket);
     return 0;
 }
