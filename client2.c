@@ -79,12 +79,6 @@ void write_data(struct Client_data * client, const char* data){
 
     // Convert hex string to binary data
     hex_to_bin(data, bin_data, bin_len);
-    printf("Sending data of ");
-    for(int i = 0; i < bin_len; i++){
-        printf("%02X ", bin_data[i]);
-    }
-    printf("length %ld  to socket %d and server address and port %s %d\n",bin_len, client->server_socket, inet_ntoa(client->server_addr.sin_addr), ntohs(client->server_addr.sin_port) );
-
     if(sendto(client->server_socket, bin_data, bin_len,0,(const struct sockaddr *)&client->server_addr, sizeof(client->server_addr)) < 0){
         perror("Error in sending data");
     }
