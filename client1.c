@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <time.h>
+#include <pthread.h>
 
 #define PORT1 4001
 #define PORT2 4002
@@ -15,7 +16,9 @@
 
 struct sockaddr_in server_addr;
 int server_socket;
-char data[1024];
+static char out_data1[1024];
+char out_data2[1024];
+char out_data3[1024];
 
 void create_socket(){
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -35,17 +38,17 @@ void connect_to_server(){
         exit(1);
     }
 }
-
-void read_data(){
-    read(server_socket, data, sizeof(data));
+void *read_data(void *arg){
+    char data[1024];
+    while(1){
+        read(server_socket, data, sizeof(data));
    
-    // Trim the newline character from the data
-    char* trimmed_data = strtok(data, "\n");
-    
-    // print timestamp and message
-    time_t current_time;
-    time(&current_time);
-    printf("{\"timestamp\": %ld, \"out1\":\"%s\"}\n", current_time, trimmed_data);
+        // Trim the newline character from the data
+        char* trimmed_data = strtok(data, "\n");
+        strcpy(out_data1, trimmed_data);
+        bzero(data, sizeof(data));
+    }
+    return NULL;
 }
 
 void close_socket(){
@@ -55,9 +58,19 @@ void close_socket(){
 int main(int argc, char **argv){
     create_socket();
     connect_to_server();
+
+    // create thread from read_data function
+    pthread_t thread;
+    pthread_create(&thread, NULL, read_data, NULL);
+
     while (1)
     {
-        read_data();
+        // read data but print it to the screen at every 100 ms
+        usleep(100000);
+        // print timestamp and message
+        time_t current_time;
+        time(&current_time);
+        printf("{\"timestamp\": %ld, \"out1\":\"%s\"}\n", current_time, out_data1);
     }
     close_socket();
     return 0;
