@@ -85,7 +85,7 @@ int main(int argc, char **argv){
         gettimeofday(&tv, NULL);
         long long milliseconds = tv.tv_sec * 1000LL + tv.tv_usec / 1000;
         // read data but print it to the screen at every 20 ms
-        if (milliseconds - last_time > 100)
+        if (milliseconds - last_time >= 100)
         {
             last_time = milliseconds;
             printf("{\"timestamp\": %lld, \"out1\":\"%s\", \"out2\":\"%s\", \"out3\":\"%s\"}\n", milliseconds, clients[0].output, clients[1].output, clients[2].output);
