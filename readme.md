@@ -31,14 +31,16 @@ The output2 at first 4Hz and amplitude is 5.0
 
 ## Building clients
 
-'''
+```
 make all 
-'''
+```
 command builds both clients 
-'''
+
+```
 make client1
 make client2
-''' 
+``` 
+
 commands could be used to build each seperately
 
 no external library used other than standart libraries
