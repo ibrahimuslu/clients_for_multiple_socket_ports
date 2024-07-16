@@ -125,7 +125,7 @@ int main(int argc, char **argv){
             }
             else if (atof(clients[2].output) < 3.0)
             {
-                write_data(&clients[3], "0002000100FF07D0");
+                write_data(&clients[3], "0002000100FF01F4");
                 write_data(&clients[3], "0002000100AA0FA0");
             }
             
