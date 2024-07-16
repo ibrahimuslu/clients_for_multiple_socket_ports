@@ -26,8 +26,11 @@ found with a small python script testing properties via connecting and sending d
 ## Analysis of outputs:
 
 The shape of output1 is alike to sinusoidal vawe and output 2 is more like triangle vawe hovewer output3 is square vawe. 
+
 We can get the frequency of output1 and output2 from control port. 
+
 The output1 at first 2Hz and amplitude is 5.0
+
 The output2 at first 4Hz and amplitude is 5.0
 
 ## Building clients
