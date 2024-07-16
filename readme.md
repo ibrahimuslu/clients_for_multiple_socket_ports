@@ -11,6 +11,7 @@ For handling 3 sockets concurrently 3 threads need to be opened and each of them
 A main while loop at 100 ms in client1 and 20ms in client2 gathers and consumes these 3 data structure and print stdout and empty it.
 
 While in main loop the data collected could be analyzed and feedback control could be sent to server via control port
+
 This is the first idea as a solution in my mind. I know that it works but i would like to go to fundamentals and go back and read again "Unix Network Programming" to refresh my knowledge and check if i can find any simpler solution. There is another solution with "select"  or "poll" but they both could be more complicated and not covers further problems could be occur such as if one of ports the frequency could change or the data could be received at the same time so can be missed. 
 ## The properties of server control protocol with default values are:
 
