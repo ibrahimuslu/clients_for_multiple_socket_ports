@@ -103,7 +103,7 @@ int main(int argc, char **argv){
     clients[3].server_addr.sin_family = AF_INET;
     clients[3].server_addr.sin_port = htons(4000);
     clients[3].server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-
+    float out3_prev,out3_curr = 0.0;
     while (1)
     {
         // print timestamp and message
@@ -115,23 +115,24 @@ int main(int argc, char **argv){
             last_time = milliseconds;
             printf("{\"timestamp\": %lld, \"out1\":\"%s\", \"out2\":\"%s\", \"out3\":\"%s\"}\n", milliseconds, clients[0].output, clients[1].output, clients[2].output);
             // after consuming the data, reset the data
-            if(clients[2].output[0] == '-'){
-                continue;
-            }
-            else if (atof(clients[2].output) >= 3.0)
-            {
+            out3_curr = atof(clients[2].output);
+            if(clients[2].output[0]== '-'){
+               continue;
+            } 
+            else if (out3_prev != out3_curr && out3_curr >= 3.0){
                 write_data(&clients[3], "0002000100FF03E8");
                 write_data(&clients[3], "0002000100AA1F40");
             }
-            else if (atof(clients[2].output) < 3.0)
-            {
+            else if (out3_prev != out3_curr && out3_curr < 3.0){
                 write_data(&clients[3], "0002000100FF01F4");
                 write_data(&clients[3], "0002000100AA0FA0");
             }
             
-            
-             for (int i = 0; i < 3; i++)
-            {
+            if(clients[2].output[0]!= '-'){
+                out3_prev = out3_curr;
+            }
+
+            for (int i = 0; i < 3; i++){
                 clients[i].output[0] = '-';
                 clients[i].output[1] = '-';
                 clients[i].output[2] = '\0';
